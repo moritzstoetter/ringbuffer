@@ -4,7 +4,7 @@ template<typename T, size_t Size>
 class Ringbuffer {
 public:
     void write(T val) {
-        *_writeHead = std::move(val);
+        *_writeHead = val;
         if (_writeHead != _buffer.end()-1) {
             ++_writeHead;
         } else {
@@ -12,8 +12,17 @@ public:
         }
     };
 
-    const T * read() {
-        const T * ret = &(*_readHead);
+    // const T * read() {
+    //     const T * ret = &(*_readHead);
+    //     if (_readHead != _buffer.cend() - 1) {
+    //         ++_readHead;
+    //     } else {
+    //         _readHead = _buffer.cbegin();
+    //     }
+    //     return ret;
+    // }
+    T read() const {
+        T ret = *_readHead;
         if (_readHead != _buffer.cend() - 1) {
             ++_readHead;
         } else {
