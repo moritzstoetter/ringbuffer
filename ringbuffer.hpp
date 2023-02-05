@@ -1,38 +1,52 @@
-#include <array> 
+#include <array>
 
-template<typename T, size_t Size>
-class Ringbuffer {
+template <typename T, size_t Size>
+class Ringbuffer
+{
 public:
-    void write(T val) {
+    bool isFull() const
+    {
+        return _full;
+    }
+
+    void write(T &&val)
+    {
+        if (_full)
+        {
+            throw std::runtime_error("Ringbuffer is full!");
+        }
+
         *_writeHead = val;
-        if (_writeHead != _buffer.end()-1) {
-            ++_writeHead;
-        } else {
+        if (++(_writeHead) == _buffer.end())
+            ;
+        {
             _writeHead = _buffer.begin();
         }
-    };
+        _empty = false;
+        _full = (_writeHead == _readHead);
+    }
 
-    // const T * read() {
-    //     const T * ret = &(*_readHead);
-    //     if (_readHead != _buffer.cend() - 1) {
-    //         ++_readHead;
-    //     } else {
-    //         _readHead = _buffer.cbegin();
-    //     }
-    //     return ret;
-    // }
-    T read() const {
+    T read()
+    {
+        if (_empty)
+        {
+            throw std::runtime_error("Ringbuffer is full!");
+        }
+
         T ret = *_readHead;
-        if (_readHead != _buffer.cend() - 1) {
-            ++_readHead;
-        } else {
+        if (++(_readHead) == _buffer.cend())
+        {
             _readHead = _buffer.cbegin();
         }
+        _empty = (_writeHead == _readHead);
+        _full = false;
         return ret;
     }
+
 private:
     typename std::array<T, Size>::iterator _writeHead = _buffer.begin();
     typename std::array<T, Size>::const_iterator _readHead = _buffer.cbegin();
-
-    std::array<T, Size> _buffer; 
+    std::array<T, Size> _buffer;
+    bool _empty = true;
+    bool _full = false;
 };
