@@ -58,10 +58,10 @@ public:
     /*
      * bulk write 
      */
-    template <size_t N>
-    void write(std::span<T, N> &&vals)
+    template <std::ranges::input_range InRange>
+    void write(InRange &&inRange)
     {
-        for (T val : vals)
+        for (T val : inRange)
         {
             this->write(std::move(val));
         }
@@ -98,17 +98,12 @@ public:
     {
         std::lock_guard<std::mutex> lock(_mutex);
 
-        // auto ret = rotate_view(
-        //                 _buffer | std::views::all, 
-        //                 std::distance(_buffer.begin(), _readHead)
-        //             ) | std::views::take(_count);  
-
-        // auto ret = _buffer | std::views::all | rotate_view_fn(std::distance(_buffer.begin(), _readHead)) | std::views::take(_count);
+        auto ret = _buffer | std::views::all | views::rotate(std::distance(_buffer.begin(), _readHead)) | std::views::take(_count);
 
         _readHead = _writeHead;
         _count = 0; 
 
-        return std::array<T,2>{};
+        return ret;
     }
 
     T peek() const
@@ -127,6 +122,11 @@ public:
             three = _buffer.begin() + i == _writeHead ? "<- w" : "";
             printf("%5s 0x%02x %-5s\n", one.c_str(), *(_buffer.cbegin() + i), three.c_str());
         }
+    }
+
+    template<std::ranges::input_range InRange>
+    auto operator<<(InRange& rhs) {
+        this->write(rhs);
     }
 
 private:
