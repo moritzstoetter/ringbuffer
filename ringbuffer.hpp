@@ -98,12 +98,17 @@ public:
     {
         std::lock_guard<std::mutex> lock(_mutex);
 
-        auto ret = rotate_view(_buffer | std::views::all, std::distance(_buffer.begin(), _readHead)) | std::views::take(_count);  
+        // auto ret = rotate_view(
+        //                 _buffer | std::views::all, 
+        //                 std::distance(_buffer.begin(), _readHead)
+        //             ) | std::views::take(_count);  
+
+        // auto ret = _buffer | std::views::all | rotate_view_fn(std::distance(_buffer.begin(), _readHead)) | std::views::take(_count);
 
         _readHead = _writeHead;
         _count = 0; 
 
-        return ret;
+        return std::array<T,2>{};
     }
 
     T peek() const
