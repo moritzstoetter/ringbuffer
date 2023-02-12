@@ -20,7 +20,7 @@ public:
     constexpr V base() && { return std::move(_baseView); }
 
     iterator begin() { return iterator{*this}; }
-    sentinel end() { return sentinel{std::ranges::end(_baseView)}; }
+    sentinel end() { return sentinel{}; }
     
     constexpr auto size() const requires std::ranges::sized_range<V> {
         return std::ranges::size(_baseView);

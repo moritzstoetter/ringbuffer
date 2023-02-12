@@ -14,24 +14,17 @@ template <typename T, size_t Size>
 class Ringbuffer
 {
 public:
-    inline bool empty() const
-    {
-        return _count == 0;
-    }
+    inline bool empty() const { return _count == 0; }
+    inline bool full() const { return _count == Size; }
+    inline size_t capacity() const { return Size - _count; }
+    inline size_t count() const { return _count; }
+    inline size_t size() const { return Size; }
 
-    inline bool full() const
+    void clear() 
     {
-        return _count == Size;
-    }
-
-    inline unsigned int count() const
-    {   
-        return _count;
-    }
-
-    inline int size() const
-    {
-        return _buffer.size();
+        std::lock_guard<std::mutex> lock(_mutex);
+        _readHead = _writeHead;
+        _count = 0;
     }
 
     /*
@@ -40,20 +33,15 @@ public:
     void write(T &&val)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-
-        if (full())
+        if (++_count > Size)
         {
+            _count = Size;
             throw std::runtime_error("Ringbuffer is full!");
         }
-
-        *_writeHead = val;
-        if (++_writeHead == _buffer.end())
-        {
-            _writeHead = _buffer.begin();
-        }
-
-        ++_count;
+        *_writeHead = std::move(val);
+        advance(_writeHead);
     }
+    
 
     /*
      * bulk write 
@@ -68,37 +56,20 @@ public:
     }
 
     /* 
-     * single value read
-     */
-    std::optional<T> read()
-    {
-        std::lock_guard<std::mutex> lock(_mutex);
-
-        if (empty())
-        {
-            std::cout << "Empty! \n";
-            return std::nullopt;
-        }
-
-        auto ret = std::optional<T>(*_readHead);
-
-        if (++_readHead == _buffer.end())
-        {
-            _readHead = _buffer.begin();
-        }
-        --_count;
-
-        return ret;
-    }
-
-    /* 
      * bulk value read 
      */
-    auto readAll()
+    [[nodiscard]] auto read() 
+    {
+        return read(_count);
+    }
+
+    [[nodiscard]] auto read(size_t n)
     {
         std::lock_guard<std::mutex> lock(_mutex);
-
-        auto ret = _buffer | std::views::all | views::rotate(std::distance(_buffer.begin(), _readHead)) | std::views::take(_count);
+        auto ret = _buffer 
+            | std::views::all 
+            | views::rotate(std::distance(_buffer.cbegin(), _readHead)) 
+            | std::views::take(std::min(n, _count));
 
         _readHead = _writeHead;
         _count = 0; 
@@ -106,21 +77,16 @@ public:
         return ret;
     }
 
-    T peek() const
+    T& peek() const
     {
-        return *_readHead;
+        return _readHead;
     }
 
     void print() const
     {
         std::cout << "Size: " << size() << ", Count: " << count() << std::endl;
-        std::string one;
-        std::string three;
-        for (int i = 0; i < Size; ++i)
-        {
-            one = _buffer.cbegin() + i == _readHead ? " r ->" : "";
-            three = _buffer.begin() + i == _writeHead ? "<- w" : "";
-            printf("%5s 0x%02x %-5s\n", one.c_str(), *(_buffer.cbegin() + i), three.c_str());
+        for (auto it = _buffer.cbegin(); it != _buffer.cend(); ++it) {
+            printf("%5s 0x%02x %-5s\n", it == _readHead ? " r ->" : "", *it, it == _writeHead ? "<- w" : "");
         }
     }
 
@@ -132,8 +98,14 @@ public:
 private:
     std::mutex _mutex;
     std::array<T, Size> _buffer;
-    unsigned int _count = 0;
-    typename std::array<T, Size>::iterator _writeHead = _buffer.begin();
-    typename std::array<T, Size>::iterator _readHead = _buffer.begin();
+    size_t _count{0};
+    typename std::array<T, Size>::iterator _writeHead{_buffer.begin()};
+    typename std::array<T, Size>::const_iterator _readHead{_buffer.begin()};
     
+    inline void advance(typename std::array<T, Size>::iterator &it) 
+    {
+        if (++it == _buffer.end()) {
+            it = _buffer.begin();
+        }
+    }
 };
