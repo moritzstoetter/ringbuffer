@@ -109,7 +109,9 @@ This circular buffer implementation needs C++20 support with std::ranges, so mak
 <!-- GETTING STARTED -->
 ## Getting Started
 
-The core of this implementation is the actual memory, allocated by a std::array, and two iterators into that array that denote the locations of reading and writing to that array. To make things a little easier later we will introduce an extra book-keeping varibable ```_count``` that we will use to store the number of stored elements. 
+The core of this implementation consists of the actual memory, allocated by a std::array, and two iterators into that array that denote the locations of reading and writing to that array. To make things a little easier later we will introduce an extra book-keeping varibable ```_count``` that we will use to store the number of stored elements. 
+
+We put these ingredients into a class ```Ringbuffer``` templated for the stored data-type and the buffer's size and get:
 
 ```cpp
 #include <array>
