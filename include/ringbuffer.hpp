@@ -17,6 +17,7 @@
 #include <ranges>
 #include <utility>
 
+
 #include "rotate_view.hpp"
 
 template <typename T, size_t Size>
@@ -65,11 +66,11 @@ public:
         return ret;
     }
 
-    T& peek() const { return unwoundRange().begin(); }
+    T& peek(size_t index) const { return unwoundRange(_offset+index, 1); }
 
     void print() const
     {
-        std::cout << "Size: " << size() << ", Count: " << count() << std::endl;
+        printf("%s %d %s %d\n", "Size: ", size(), ", Count: ", count());
         for (int i = 0; i<Size; ++i) {
             printf("%5s 0x%02x %-5s\n", i==_offset ? " r ->" : "", _buffer.at(i), i==(_offset+_count)%Size ? "<- w" : "");
         }

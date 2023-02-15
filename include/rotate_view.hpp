@@ -7,6 +7,8 @@
 //         ╰────────────────────────────╯
 //
 
+#pragma once
+
 #include <ranges>
 
 template <std::ranges::view V>
